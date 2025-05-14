@@ -26,4 +26,5 @@ path = "../flywheelmc-common"
 
 
 [dependencies.wasmtime]
-version = "32.0"
+version  = "32.0"
+features = [ "runtime" ]
