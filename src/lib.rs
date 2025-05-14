@@ -1,22 +1,65 @@
+#![feature(
+    // Language
+    decl_macro,
+    macro_metavar_expr,
+    unboxed_closures,
+    // Standard library
+    fn_traits,
+    map_try_insert,
+    tuple_trait
+)]
+
+
 use flywheelmc_common::prelude::*;
 use wasmtime as wt;
 
 
 mod sig;
+pub use sig::ImportFuncs;
 
 mod state;
+
+mod types;
+pub use types::{ WasmPtr, WasmAnyPtr };
+
+mod import_defs;
+
+
+pub const PROTOCOL_VERSION : u64 = 0;
 
 
 pub struct FlywheelMcWasmPlugin {
     /// Functions provided to WASM modules for import.
-    import_funcs : sig::ImportFuncs
+    pub import_funcs : sig::ImportFuncs,
+    /// Functions that a WASM module can export.
+    pub export_funcs : sig::ExportFuncs
+}
+
+impl Default for FlywheelMcWasmPlugin {
+    fn default() -> Self { Self {
+
+        import_funcs : {
+            let mut import_funcs = sig::ImportFuncs::new();
+            import_defs::define_all(&mut import_funcs);
+            import_funcs
+        },
+
+        export_funcs : {
+            let mut export_funcs = sig::ExportFuncs::new();
+            export_funcs.define::<(), u64>("flywheel_protocol", true);
+            export_funcs.define::<(), ()>("flywheel_init", true);
+            export_funcs.define::<(u32, u32,), WasmAnyPtr>("flywheel_alloc", true);
+            export_funcs
+        }
+
+    } }
 }
 
 impl Plugin for FlywheelMcWasmPlugin {
     fn build(&self, app : &mut App) {
         let     engine = WasmEngine::default();
         let mut linker = WasmLinker(wt::Linker::new(&engine.0));
-        self.import_funcs.register(&mut linker.0);
+        self.import_funcs.register(&mut linker.0); // TODO: Handle Err case
         app
             .insert_resource(engine)
             .insert_resource(linker);
