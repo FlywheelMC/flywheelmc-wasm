@@ -3,6 +3,10 @@ use core::marker::Tuple;
 use wasmtime as wt;
 
 
+mod transaction;
+pub use transaction::*;
+
+
 pub trait WasmParamTyList : Tuple + Send + 'static {
     type Wasm : wt::WasmTyList + wt::WasmRet;
     fn from_wasm(wasm : Self::Wasm) -> Self;
@@ -31,6 +35,14 @@ impl WasmParamTy for u64 {
     type Wasm = u64;
     fn from_wasm(wasm : Self::Wasm) -> Self { wasm }
 }
+impl WasmParamTy for f32 {
+    type Wasm = f32;
+    fn from_wasm(wasm : Self::Wasm) -> Self { wasm }
+}
+impl WasmParamTy for f64 {
+    type Wasm = f64;
+    fn from_wasm(wasm : Self::Wasm) -> Self { wasm }
+}
 impl<T : WasmPtrable> WasmParamTy for WasmPtr<T> {
     type Wasm = u32;
     fn from_wasm(ptr : Self::Wasm) -> Self { Self { ptr, marker : PhantomData } }
@@ -38,6 +50,10 @@ impl<T : WasmPtrable> WasmParamTy for WasmPtr<T> {
 impl WasmParamTy for WasmAnyPtr {
     type Wasm = u32;
     fn from_wasm(ptr : Self::Wasm) -> Self { Self { ptr } }
+}
+impl WasmParamTy for TransactionId {
+    type Wasm = u64;
+    fn from_wasm(id : Self::Wasm) -> Self { Self { id } }
 }
 
 
@@ -59,6 +75,14 @@ impl WasmReturnTy for u64 {
     type Wasm = u64;
     fn to_wasm(self) -> Self::Wasm { self }
 }
+impl WasmReturnTy for f32 {
+    type Wasm = f32;
+    fn to_wasm(self) -> Self::Wasm { self }
+}
+impl WasmReturnTy for f64 {
+    type Wasm = f64;
+    fn to_wasm(self) -> Self::Wasm { self }
+}
 impl<T : WasmPtrable> WasmReturnTy for WasmPtr<T> {
     type Wasm = u32;
     fn to_wasm(self) -> Self::Wasm { self.ptr }
@@ -66,6 +90,10 @@ impl<T : WasmPtrable> WasmReturnTy for WasmPtr<T> {
 impl WasmReturnTy for WasmAnyPtr {
     type Wasm = u32;
     fn to_wasm(self) -> Self::Wasm { self.ptr }
+}
+impl WasmReturnTy for TransactionId {
+    type Wasm = u64;
+    fn to_wasm(self) -> Self::Wasm { self.id }
 }
 
 
@@ -80,6 +108,8 @@ unsafe impl WasmPtrable for u64 { }
 unsafe impl WasmPtrable for i64 { }
 unsafe impl WasmPtrable for u128 { }
 unsafe impl WasmPtrable for i128 { }
+unsafe impl WasmPtrable for f32 { }
+unsafe impl WasmPtrable for f64 { }
 unsafe impl<T : WasmPtrable> WasmPtrable for WasmPtr<T> { }
 unsafe impl WasmPtrable for WasmAnyPtr { }
 
@@ -88,28 +118,20 @@ pub struct WasmPtr<T : WasmPtrable> {
     ptr    : u32,
     marker : PhantomData<*mut T>
 }
-
 unsafe impl<T : WasmPtrable> Send for WasmPtr<T> { }
-
 impl <T : WasmPtrable> WasmPtr<T> {
-
-    pub fn write(&self, value : &T) -> Result<(), OutOfBounds> {
+    pub fn write(&self, _value : &T) -> Result<(), OutOfBounds> {
         todo!();
     }
-
 }
-
 
 pub struct WasmAnyPtr {
     ptr : u32
 }
-
 impl WasmAnyPtr {
-
-    pub unsafe fn write(&self, value : &[u8]) -> Result<(), OutOfBounds> {
+    pub unsafe fn write(&self, _value : &[u8]) -> Result<(), OutOfBounds> {
         todo!();
     }
-
 }
 
 
