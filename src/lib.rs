@@ -20,11 +20,11 @@ pub use sig::ImportFuncs;
 mod state;
 
 mod types;
-pub use types::{ WasmPtr, WasmAnyPtr };
+pub use types::{ WasmPtr, WasmAnyPtr, WasmResult };
 
 mod import_defs;
 
-mod runner;
+pub mod runner;
 
 
 pub const PROTOCOL_VERSION : u64 = 0;
@@ -59,20 +59,30 @@ impl Default for FlywheelMcWasmPlugin {
 
 impl Plugin for FlywheelMcWasmPlugin {
     fn build(&self, app : &mut App) {
-        let mut globals = WasmGlobals::default();
-        self.import_funcs.register(&mut globals.linker).unwrap(); // TODO: Handle Err case
-        app.insert_resource(globals);
+        let     engine = WasmGlobals::new_engine();
+        let mut linker = wt::Linker::new(&engine);
+        self.import_funcs.register(&mut linker).unwrap(); // TODO: Handle Err case
+        app
+            .add_event::<runner::StartWasm>()
+            .add_event::<runner::WasmStartedEvent>()
+            .add_event::<runner::WasmErrorEvent>()
+            .insert_resource(WasmGlobals {
+                engine,
+                linker : Arc::new(linker)
+            })
+            .add_systems(Update, runner::compile_wasms);
     }
 }
 
 
 #[derive(Resource)]
-struct WasmGlobals {
+pub struct WasmGlobals {
     engine : wt::Engine,
-    linker : wt::Linker<state::InstanceState>
+    linker : Arc<wt::Linker<state::InstanceState>>
 }
-impl Default for WasmGlobals {
-    fn default() -> Self {
+impl WasmGlobals {
+
+    fn new_engine() -> wt::Engine {
         let mut engine_config = wt::Config::new();
         engine_config
             .async_support(true)
@@ -113,11 +123,7 @@ impl Default for WasmGlobals {
         engine_config
             .cache_config_load_default().unwrap()
             .allocation_strategy(wt::InstanceAllocationStrategy::OnDemand);
-        let engine = wt::Engine::new(&engine_config).unwrap();
-        let linker = wt::Linker::new(&engine);
-        Self {
-            engine,
-            linker
-        }
+        wt::Engine::new(&engine_config).unwrap()
     }
+
 }

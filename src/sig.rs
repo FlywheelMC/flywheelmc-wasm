@@ -73,7 +73,8 @@ impl ExportFuncs {
         Params  : WasmParamTyList,
         Returns : WasmReturnTy
     {
-        todo!(); // TODO: Define export func
+        // TODO: Define export func
+        self
     }
 
 }

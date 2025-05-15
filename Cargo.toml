@@ -23,6 +23,8 @@ unused_parens = "allow"
 
 [dependencies.flywheelmc-common]
 path = "../flywheelmc-common"
+[dependencies.flywheelmc-players]
+path = "../flywheelmc-players"
 
 
 [dependencies.wasmtime]
