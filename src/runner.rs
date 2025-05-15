@@ -78,10 +78,11 @@ pub fn compile_wasms(
                     let     module   = module?;
                     /// TODO: Validate module imports and exports.
                     let mut store    = wt::Store::new(&engine, InstanceState {});
+                    store.set_fuel(u64::MAX).unwrap();
                     let     instance = linker.instantiate_async(&mut store, &module).await?;
                     let     main_fn  = instance.get_typed_func::<(), ()>(&mut store, "flywheel_main")?;
                     Ok(AsyncWorld.spawn_task(async move {
-                        let _ = main_fn.call_async(&mut store, ());
+                        let _ = main_fn.call_async(&mut store, ()).await.unwrap(); // TODO: Get rid of this unwrap.
                     }))
 
                 }.await;
