@@ -37,7 +37,7 @@ impl ImportFuncs {
                 }).map(|_| ())
             })
         }).is_err()) {
-            todo!() // TODO: Panic because name already taken
+            panic!("Importable function {:?} is already defined.", name);
         }
         self
     }
