@@ -24,6 +24,8 @@ pub use types::{ WasmPtr, WasmAnyPtr };
 
 mod import_defs;
 
+mod runner;
+
 
 pub const PROTOCOL_VERSION : u64 = 0;
 
@@ -57,19 +59,19 @@ impl Default for FlywheelMcWasmPlugin {
 
 impl Plugin for FlywheelMcWasmPlugin {
     fn build(&self, app : &mut App) {
-        let     engine = WasmEngine::default();
-        let mut linker = WasmLinker(wt::Linker::new(&engine.0));
-        self.import_funcs.register(&mut linker.0); // TODO: Handle Err case
-        app
-            .insert_resource(engine)
-            .insert_resource(linker);
+        let mut globals = WasmGlobals::default();
+        self.import_funcs.register(&mut globals.linker).unwrap(); // TODO: Handle Err case
+        app.insert_resource(globals);
     }
 }
 
 
 #[derive(Resource)]
-struct WasmEngine(wt::Engine);
-impl Default for WasmEngine {
+struct WasmGlobals {
+    engine : wt::Engine,
+    linker : wt::Linker<state::InstanceState>
+}
+impl Default for WasmGlobals {
     fn default() -> Self {
         let mut engine_config = wt::Config::new();
         engine_config
@@ -111,9 +113,11 @@ impl Default for WasmEngine {
         engine_config
             .cache_config_load_default().unwrap()
             .allocation_strategy(wt::InstanceAllocationStrategy::OnDemand);
-        Self(wt::Engine::new(&engine_config).unwrap())
+        let engine = wt::Engine::new(&engine_config).unwrap();
+        let linker = wt::Linker::new(&engine);
+        Self {
+            engine,
+            linker
+        }
     }
 }
-
-#[derive(Resource)]
-struct WasmLinker(wt::Linker<state::InstanceState>);

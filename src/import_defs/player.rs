@@ -55,6 +55,7 @@ async fn flywheel_player_send_actionbar(_session_id : u64, _in_msg : WasmAnyPtr,
 }
 
 /// XML text
+#[allow(clippy::too_many_arguments)]
 async fn flywheel_player_send_title(
     _session_id   : u64,
     _in_title     : WasmAnyPtr,

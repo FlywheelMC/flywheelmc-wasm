@@ -17,6 +17,7 @@ macro impl_wasmtyconv_for_tuple( $( $generic:ident ),* $(,)? ) {
         type Wasm = ( $( <$generic as WasmParamTy>::Wasm , )* );
         #[allow(unused_variables)]
         fn from_wasm(wasm : Self::Wasm) -> Self {
+            #[allow(clippy::unused_unit)]
             ( $( <$generic as WasmParamTy>::from_wasm(wasm.${index()}) , )* )
         }
     }
@@ -97,6 +98,8 @@ impl WasmReturnTy for TransactionId {
 }
 
 
+/// ### Safety
+/// If implemented incorrectly, this could go horribly wrong.
 pub unsafe trait WasmPtrable : 'static { }
 unsafe impl WasmPtrable for u8 { }
 unsafe impl WasmPtrable for i8 { }
@@ -129,6 +132,8 @@ pub struct WasmAnyPtr {
     ptr : u32
 }
 impl WasmAnyPtr {
+    /// ### Safety
+    /// The caller is responsible for ensuring that `value` is the correct size.
     pub unsafe fn write(&self, _value : &[u8]) -> Result<(), OutOfBounds> {
         todo!();
     }

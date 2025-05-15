@@ -4,7 +4,7 @@ use flywheelmc_common::prelude::*;
 use wasmtime as wt;
 
 
-pub const MODULE : &'static str = "env";
+pub const MODULE : &str = "env";
 
 
 pub struct ImportFuncs {
@@ -51,8 +51,9 @@ impl ImportFuncs {
 
 }
 
+type ImportFuncRegister = Box<dyn (Fn(&mut wt::Linker<state::InstanceState>, &'static str) -> wt::Result<()>) + Send + Sync>;
 struct ImportFunc {
-    register : Box<dyn (Fn(&mut wt::Linker<state::InstanceState>, &'static str) -> wt::Result<()>) + Send + Sync>
+    register : ImportFuncRegister
 }
 
 
