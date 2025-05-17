@@ -70,6 +70,7 @@ async fn flywheel_player_send_title(
     todo!();
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn flywheel_player_send_sound(
     _ctx          : WasmCallCtx<'_>,
     _session_id : u64,

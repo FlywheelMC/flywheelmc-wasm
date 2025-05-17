@@ -31,7 +31,7 @@ impl ImportFuncs {
                 f.clone().call(WasmCallCtx { caller }, params)
             }).map(|_| ())
         })).is_err()) {
-            panic!("Importable function {:?} is already defined.", name);
+            panic!("Importable function {name:?} is already defined.");
         }
         self
     }
@@ -113,9 +113,12 @@ impl<'l> WasmCallCtx<'l> {
     pub fn store(&self) -> impl wt::AsContext {
         &self.caller
     }
-
     pub fn store_mut(&mut self) -> impl wt::AsContextMut {
         &mut self.caller
+    }
+
+    pub fn refuel(&mut self) {
+        let _ = self.caller.set_fuel(u64::MAX);
     }
 
     pub fn mem_read<T : WasmPtrable>(&self, ptr : WasmPtr<T>) -> Result<T, MemoryDecodeError> {

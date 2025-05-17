@@ -2,22 +2,9 @@ use super::*;
 
 
 pub fn define_all(import_funcs : &mut ImportFuncs) {
-    define!(import_funcs, flywheel_system_next_event,);
     define!(import_funcs, flywheel_system_dur_since_epoch,);
     define!(import_funcs, flywheel_system_players,);
     define!(import_funcs, flywheel_system_queue_stop,);
-}
-
-
-async fn flywheel_system_next_event(
-    _ctx          : WasmCallCtx<'_>,
-    _out_id_ptr   : WasmPtr<WasmAnyPtr>,
-    _out_id_len   : WasmPtr<u32>,
-    _out_args_ptr : WasmPtr<WasmAnyPtr>,
-    _out_args_len : WasmPtr<u32>
-) -> WasmResult<u32> {
-    // TODO: Next event
-    return Ok(0);
 }
 
 

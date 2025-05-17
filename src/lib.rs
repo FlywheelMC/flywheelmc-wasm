@@ -2,9 +2,7 @@
     // Language
     decl_macro,
     macro_metavar_expr,
-    unboxed_closures,
     // Standard library
-    fn_traits,
     map_try_insert,
     tuple_trait
 )]
