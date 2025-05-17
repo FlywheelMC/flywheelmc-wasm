@@ -15,48 +15,49 @@ pub fn define_all(import_funcs : &mut ImportFuncs) {
 }
 
 
-async fn flywheel_player_get_pos(_session_id : u64, _out_x : WasmPtr<f64>, _out_y : WasmPtr<f64>, _out_z : WasmPtr<f64>) -> WasmResult<()> {
+async fn flywheel_player_get_pos(_ctx : WasmCallCtx<'_>, _session_id : u64, _out_x : WasmPtr<f64>, _out_y : WasmPtr<f64>, _out_z : WasmPtr<f64>) -> WasmResult<()> {
     todo!()
 }
 
-async fn flywheel_player_set_pos(_session_id : u64, _x : f64, _y : f64, _z : f64) -> WasmResult<()> {
+async fn flywheel_player_set_pos(_ctx : WasmCallCtx<'_>, _session_id : u64, _x : f64, _y : f64, _z : f64) -> WasmResult<()> {
     todo!()
 }
 
 
 /// Radians
-async fn flywheel_player_get_rot(_session_id : u64, _out_yaw : WasmPtr<f64>, _out_pitch : WasmPtr<f64>) -> WasmResult<()> {
+async fn flywheel_player_get_rot(_ctx : WasmCallCtx<'_>, _session_id : u64, _out_yaw : WasmPtr<f64>, _out_pitch : WasmPtr<f64>) -> WasmResult<()> {
     todo!()
 }
 
 /// Radians
-async fn flywheel_player_set_rot(_session_id : u64, _yaw : f64, _pitch : f64) -> WasmResult<()> {
+async fn flywheel_player_set_rot(_ctx : WasmCallCtx<'_>, _session_id : u64, _yaw : f64, _pitch : f64) -> WasmResult<()> {
     todo!()
 }
 
 
-async fn flywheel_player_get_vel(_session_id : u64, _out_x : WasmPtr<f64>, _out_y : WasmPtr<f64>, _out_z : WasmPtr<f64>) -> WasmResult<()> {
+async fn flywheel_player_get_vel(_ctx : WasmCallCtx<'_>, _session_id : u64, _out_x : WasmPtr<f64>, _out_y : WasmPtr<f64>, _out_z : WasmPtr<f64>) -> WasmResult<()> {
     todo!()
 }
 
-async fn flywheel_player_set_vel(_session_id : u64, _x : f64, _y : f64, _z : f64) -> WasmResult<()> {
+async fn flywheel_player_set_vel(_ctx : WasmCallCtx<'_>, _session_id : u64, _x : f64, _y : f64, _z : f64) -> WasmResult<()> {
     todo!()
 }
 
 
 /// XML text
-async fn flywheel_player_send_chat(_session_id : u64, _in_msg : WasmAnyPtr, _msg_len : u32) -> WasmResult<()> {
+async fn flywheel_player_send_chat(_ctx : WasmCallCtx<'_>, _session_id : u64, _in_msg : WasmAnyPtr, _msg_len : u32) -> WasmResult<()> {
     todo!();
 }
 
 /// XML text
-async fn flywheel_player_send_actionbar(_session_id : u64, _in_msg : WasmAnyPtr, _msg_len : u32) -> WasmResult<()> {
+async fn flywheel_player_send_actionbar(_ctx : WasmCallCtx<'_>, _session_id : u64, _in_msg : WasmAnyPtr, _msg_len : u32) -> WasmResult<()> {
     todo!();
 }
 
 /// XML text
 #[allow(clippy::too_many_arguments)]
 async fn flywheel_player_send_title(
+    _ctx          : WasmCallCtx<'_>,
     _session_id   : u64,
     _in_title     : WasmAnyPtr,
     _title_len    : u32,
@@ -70,6 +71,7 @@ async fn flywheel_player_send_title(
 }
 
 async fn flywheel_player_send_sound(
+    _ctx          : WasmCallCtx<'_>,
     _session_id : u64,
     _in_id      : WasmAnyPtr,
     _id_len     : u32,

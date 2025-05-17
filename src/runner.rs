@@ -1,7 +1,6 @@
 use crate::WasmGlobals;
 use crate::state::InstanceState;
 use flywheelmc_common::prelude::*;
-use wasmtime as wt;
 
 
 impl WasmGlobals {
@@ -46,7 +45,18 @@ pub struct StartWasm {
 #[derive(Event)]
 pub struct WasmErrorEvent {
     pub id  : StartWasmId,
-    pub err : wt::Error
+    pub err : WasmError
+}
+
+#[derive(Debug)]
+pub enum WasmError {
+    Terminated,
+    Wasmtime(wt::Error)
+}
+impl From<wt::Error> for WasmError {
+    fn from(value : wt::Error) -> Self {
+        Self::Wasmtime(value)
+    }
 }
 
 #[derive(Event)]
@@ -57,6 +67,7 @@ pub struct WasmStartedEvent {
 
 #[derive(Component)]
 pub struct WasmRunnerInstance {
+    id           : StartWasmId,
     main_fn_task : Task<()>
 }
 
@@ -76,24 +87,28 @@ pub fn compile_wasms(
                 let result = async move {
 
                     let     module   = module?;
-                    /// TODO: Validate module imports and exports.
-                    let mut store    = wt::Store::new(&engine, InstanceState {});
+                    // TODO: Validate module imports and exports.
+                    let mut store    = wt::Store::new(&engine, InstanceState {
+                        memory : None
+                    });
                     store.set_fuel(u64::MAX).unwrap();
+                    store.fuel_async_yield_interval(Some(1024)).unwrap();
                     let     instance = linker.instantiate_async(&mut store, &module).await?;
+                    store.data_mut().memory = Some(instance.get_memory(&mut store, "memory").unwrap()); // TODO: Get rid of this unwrap.
                     let     main_fn  = instance.get_typed_func::<(), ()>(&mut store, "flywheel_main")?;
                     Ok(AsyncWorld.spawn_task(async move {
-                        let _ = main_fn.call_async(&mut store, ()).await.unwrap(); // TODO: Get rid of this unwrap.
+                        let _ = task::poll_and_yield(main_fn.call_async(&mut store, ())).await;
                     }))
 
                 }.await;
                 match (result) {
                     Ok(main_fn_task) => {
                         info!("Started WASM runner {}...", id.0);
-                        let runner = AsyncWorld.spawn_bundle(WasmRunnerInstance { main_fn_task });
+                        let runner = AsyncWorld.spawn_bundle(WasmRunnerInstance { id, main_fn_task });
                         let _      = AsyncWorld.send_event(WasmStartedEvent { id, entity : runner.id() });
                     }
                     Err(err) => {
-                        debug!("Failed to start WASM runner {}: {err}", id.0);
+                        debug!("Failed to start WASM runner {}: {err:?}", id.0);
                         let _ = AsyncWorld.send_event(WasmErrorEvent { id, err });
                     }
                 }
@@ -102,25 +117,3 @@ pub fn compile_wasms(
         }
     }
 }
-
-/*async fn compile_wasms(
-    engine : wt::Engine,
-    linker : Arc<wt::Linker<InstanceState>>
-) {
-    loop {
-        let event = AsyncWorld.next_event::<StartWasm>().await;
-        debug!("WASM {} compile requested", event.id.0);
-        let engine = engine.clone();
-        let linker = Arc::clone(&linker);
-        AsyncWorld.spawn_bundle(CompilingWasm { task : AsyncWorld.spawn_task(async move {
-            let result : Result<wt::Instance, Arc<wt::Error>> = async move {
-                let module   = event.module?;
-                /// TODO: Validate module imports and exports.
-                let store    = wt::Store::new(&engine, InstanceState {});
-                let instance = linker.instantiate_async(store, &module).await?;
-                Ok(instance)
-            }.await;
-        }) });
-        task::yield_now().await;
-    }
-}*/

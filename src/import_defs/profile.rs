@@ -9,6 +9,7 @@ pub fn define_all(import_funcs : &mut ImportFuncs) {
 
 
 async fn flywheel_profile_by_session(
+    _ctx              : WasmCallCtx<'_>,
     _session_id       : u64,
     _out_uuid         : WasmPtr<u128>,
     _out_username_ptr : WasmPtr<WasmAnyPtr>,
@@ -18,12 +19,14 @@ async fn flywheel_profile_by_session(
 }
 
 async fn flywheel_profile_by_uuid(
+    _ctx     : WasmCallCtx<'_>,
     _in_uuid : WasmPtr<u128>
 ) -> WasmResult<TransactionId> {
     todo!()
 }
 
 async fn flywheel_profile_by_username(
+    _ctx          : WasmCallCtx<'_>,
     _in_username  : WasmAnyPtr,
     _username_len : u32
 ) -> WasmResult<TransactionId> {

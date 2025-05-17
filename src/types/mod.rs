@@ -1,6 +1,6 @@
+use crate::sig::{ MemoryOutOfBounds, MemoryDecodeError, WasmCallCtx };
 use flywheelmc_common::prelude::*;
 use core::marker::Tuple;
-use wasmtime as wt;
 
 
 mod transaction;
@@ -46,7 +46,7 @@ impl WasmParamTy for f64 {
 }
 impl<T : WasmPtrable> WasmParamTy for WasmPtr<T> {
     type Wasm = u32;
-    fn from_wasm(ptr : Self::Wasm) -> Self { Self { ptr, marker : PhantomData } }
+    fn from_wasm(ptr : Self::Wasm) -> Self { unsafe { Self::from_ptr(ptr) } }
 }
 impl WasmParamTy for WasmAnyPtr {
     type Wasm = u32;
@@ -100,43 +100,103 @@ impl WasmReturnTy for TransactionId {
 
 /// ### Safety
 /// If implemented incorrectly, this could go horribly wrong.
-pub unsafe trait WasmPtrable : 'static { }
-unsafe impl WasmPtrable for u8 { }
-unsafe impl WasmPtrable for i8 { }
-unsafe impl WasmPtrable for u16 { }
-unsafe impl WasmPtrable for i16 { }
-unsafe impl WasmPtrable for u32 { }
-unsafe impl WasmPtrable for i32 { }
-unsafe impl WasmPtrable for u64 { }
-unsafe impl WasmPtrable for i64 { }
-unsafe impl WasmPtrable for u128 { }
-unsafe impl WasmPtrable for i128 { }
-unsafe impl WasmPtrable for f32 { }
-unsafe impl WasmPtrable for f64 { }
-unsafe impl<T : WasmPtrable> WasmPtrable for WasmPtr<T> { }
-unsafe impl WasmPtrable for WasmAnyPtr { }
+pub unsafe trait WasmPtrable : Sized + 'static {
+    fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError>;
+    fn mem_write(&self, ctx : &mut WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<(), MemoryOutOfBounds>;
+}
+macro impl_wasm_ptrable_for_num( $ty:ty ) {
+    unsafe impl WasmPtrable for $ty {
+        fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError> {
+            let mut buf = [0u8; mem::size_of::<Self>()];
+            memory.read(ctx.store(), ptr.offset(), &mut buf)?;
+            Ok(Self::from_le_bytes(buf))
+        }
+        fn mem_write(&self, ctx : &mut WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<(), MemoryOutOfBounds> {
+            memory.write(ctx.store_mut(), ptr.offset() as usize, &self.to_le_bytes())?;
+            Ok(())
+        }
+    }
+}
+impl_wasm_ptrable_for_num!(u8);
+impl_wasm_ptrable_for_num!(i8);
+impl_wasm_ptrable_for_num!(u16);
+impl_wasm_ptrable_for_num!(i16);
+impl_wasm_ptrable_for_num!(u32);
+impl_wasm_ptrable_for_num!(i32);
+impl_wasm_ptrable_for_num!(u64);
+impl_wasm_ptrable_for_num!(i64);
+impl_wasm_ptrable_for_num!(u128);
+impl_wasm_ptrable_for_num!(i128);
+impl_wasm_ptrable_for_num!(f32);
+impl_wasm_ptrable_for_num!(f64);
+unsafe impl<T : WasmPtrable> WasmPtrable for WasmPtr<T> {
+    fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError> {
+        <u32 as WasmPtrable>::mem_read(ctx, memory, unsafe { ptr.cast() }).map(|ptr| unsafe { Self::from_ptr(ptr) })
+    }
+    fn mem_write(&self, ctx : &mut WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<(), MemoryOutOfBounds> {
+        <u32 as WasmPtrable>::mem_write(&self.ptr(), ctx, memory, unsafe { ptr.cast() })
+    }
+}
+unsafe impl WasmPtrable for WasmAnyPtr {
+    fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError> {
+        <u32 as WasmPtrable>::mem_read(ctx, memory, unsafe { ptr.cast() }).map(|ptr| unsafe { Self::from_ptr(ptr) })
+    }
+    fn mem_write(&self, ctx : &mut WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<(), MemoryOutOfBounds> {
+        <u32 as WasmPtrable>::mem_write(&self.ptr(), ctx, memory, unsafe { ptr.cast() })
+    }
+}
 
 
+#[derive(Clone, Copy)]
 pub struct WasmPtr<T : WasmPtrable> {
-    ptr    : u32,
-    marker : PhantomData<*mut T>
+    pub(crate)  ptr     : u32,
+                _marker : PhantomData<*mut T>
+}
+impl<T : WasmPtrable> WasmPtr<T> {
+
+    #[inline]
+    pub unsafe fn from_ptr(ptr : u32) -> Self { Self { ptr, _marker : PhantomData } }
+
+    #[inline]
+    pub fn ptr(&self) -> u32 { self.ptr }
+
+    #[inline]
+    pub fn offset(&self) -> usize { self.ptr as usize }
+
+    #[inline(always)]
+    pub unsafe fn cast<U : WasmPtrable>(self) -> WasmPtr<U> {
+        unsafe { mem::transmute(self) }
+    }
+
+    #[inline]
+    pub fn type_erase(self) -> WasmAnyPtr { unsafe { WasmAnyPtr::from_ptr(self.ptr) } }
+
 }
 unsafe impl<T : WasmPtrable> Send for WasmPtr<T> { }
-impl <T : WasmPtrable> WasmPtr<T> {
-    pub fn write(&self, _value : &T) -> Result<(), OutOfBounds> {
-        todo!();
-    }
+unsafe impl<T : WasmPtrable> Sync for WasmPtr<T> { }
+
+
+#[derive(Clone, Copy)]
+pub struct WasmAnyPtr {
+    pub(crate) ptr : u32
 }
 
-pub struct WasmAnyPtr {
-    ptr : u32
-}
 impl WasmAnyPtr {
-    /// ### Safety
-    /// The caller is responsible for ensuring that `value` is the correct size.
-    pub unsafe fn write(&self, _value : &[u8]) -> Result<(), OutOfBounds> {
-        todo!();
+
+    #[inline]
+    pub unsafe fn from_ptr(ptr : u32) -> Self { Self { ptr } }
+
+    #[inline]
+    pub fn ptr(&self) -> u32 { self.ptr }
+
+    #[inline]
+    pub fn offset(&self) -> usize { self.ptr as usize }
+
+    #[inline]
+    pub unsafe fn assume_type<U : WasmPtrable>(self) -> WasmPtr<U> {
+        unsafe { WasmPtr::<U>::from_ptr(self.ptr) }
     }
+
 }
 
 

@@ -11,11 +11,10 @@
 
 
 use flywheelmc_common::prelude::*;
-use wasmtime as wt;
 
 
 mod sig;
-pub use sig::ImportFuncs;
+pub use sig::{ ImportFuncs, WasmCallCtx };
 
 mod state;
 

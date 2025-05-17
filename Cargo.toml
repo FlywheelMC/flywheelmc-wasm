@@ -14,7 +14,11 @@ keywords   = [ "flywheel", "mc", "minecraft", "game" ]
 categories = [ "wasm" ]
 
 edition      = "2024"
-rust-version = "1.87"
+rust-version = "1.89"
+
+
+[features]
+unstable = [ ]
 
 
 [lints.rust]
@@ -27,6 +31,7 @@ path = "../flywheelmc-common"
 path = "../flywheelmc-players"
 
 
-[dependencies.wasmtime]
+[dependencies.wt]
+package  = "wasmtime"
 version  = "32.0"
 features = [ "runtime" ]
