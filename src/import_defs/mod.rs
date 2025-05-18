@@ -39,14 +39,14 @@ async fn flywheel_next_event(
         out_args_ptr : WasmPtr<WasmAnyPtr>,
         out_args_len : WasmPtr<u32>
 ) -> WasmResult<u32> {
-    if let Some((id, args,)) = ctx.next_event() {
+    if let Some((id, args,)) = ctx.next_event().await {
         let id_len = id.len();
-        let id_ptr = ctx.mem_alloc_any(id_len, 1)?;
+        let id_ptr = ctx.mem_alloc_any(id_len, 1).await?;
         ctx.mem_write_any(id_ptr, id.as_bytes())?;
         ctx.mem_write(out_id_ptr, id_ptr)?;
         ctx.mem_write(out_id_len, id_len as u32)?;
         let args_len = args.len();
-        let args_ptr = ctx.mem_alloc_any(args_len, 1)?;
+        let args_ptr = ctx.mem_alloc_any(args_len, 1).await?;
         ctx.mem_write_any(args_ptr, &args)?;
         ctx.mem_write(out_args_ptr, args_ptr)?;
         ctx.mem_write(out_args_len, args_len as u32)?;

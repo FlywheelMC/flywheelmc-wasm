@@ -1,4 +1,4 @@
-use crate::state::InstanceState;
+use crate::runner::InstanceState;
 use crate::types::{ WasmParamTyList, WasmParamTy, WasmResult, WasmReturnTy };
 use crate::types::{ WasmPtr, WasmAnyPtr, WasmPtrable };
 use flywheelmc_common::prelude::*;
@@ -110,6 +110,10 @@ pub struct WasmCallCtx<'l> {
 
 impl<'l> WasmCallCtx<'l> {
 
+    pub fn runner(&self) -> Entity {
+        self.caller.data().runner
+    }
+
     pub fn store(&self) -> impl wt::AsContext {
         &self.caller
     }
@@ -117,10 +121,9 @@ impl<'l> WasmCallCtx<'l> {
         &mut self.caller
     }
 
-    pub fn next_event(&mut self) -> Option<(String, Vec<u8>,)> {
-        self.caller.data_mut().event_queue.pop_front()
+    pub async fn next_event(&mut self) -> Option<(&'static str, Vec<u8>,)> {
+        self.caller.data_mut().event_receiver.try_recv().ok()
     }
-
     pub fn refuel(&mut self) {
         let _ = self.caller.set_fuel(u64::MAX);
     }
@@ -146,8 +149,8 @@ impl<'l> WasmCallCtx<'l> {
         Ok(())
     }
 
-    pub fn mem_alloc_any(&mut self, len : usize, align : usize) -> Result<WasmAnyPtr, MemoryAllocError> {
-        let ptr = self.caller.data().fn_alloc.clone().ok_or(MemoryAllocError::NoAllocFn)?.call(&mut self.caller, (len as u32, align as u32,))?;
+    pub async fn mem_alloc_any(&mut self, len : usize, align : usize) -> Result<WasmAnyPtr, MemoryAllocError> {
+        let ptr = self.caller.data().fn_alloc.clone().ok_or(MemoryAllocError::NoAllocFn)?.call_async(&mut self.caller, (len as u32, align as u32,)).await?;
         Ok(unsafe { WasmAnyPtr::from_ptr(ptr) })
     }
 

@@ -14,8 +14,6 @@ use flywheelmc_common::prelude::*;
 mod sig;
 pub use sig::{ ImportFuncs, WasmCallCtx };
 
-mod state;
-
 mod types;
 pub use types::{ WasmPtr, WasmAnyPtr, WasmResult };
 
@@ -63,11 +61,15 @@ impl Plugin for FlywheelMcWasmPlugin {
             .add_event::<runner::StartWasm>()
             .add_event::<runner::WasmStartedEvent>()
             .add_event::<runner::WasmErrorEvent>()
+            .add_event::<runner::player::PlayerBindWasm>()
+            .add_event::<runner::event::WasmTriggerEvent>()
             .insert_resource(WasmGlobals {
                 engine,
                 linker : Arc::new(linker)
             })
-            .add_systems(Update, runner::compile_wasms);
+            .add_systems(Update, runner::compile_wasms)
+            .add_systems(Update, runner::player::bind_players)
+            .add_systems(Update, runner::event::trigger_events);
     }
 }
 
@@ -75,7 +77,7 @@ impl Plugin for FlywheelMcWasmPlugin {
 #[derive(Resource)]
 pub struct WasmGlobals {
     engine : wt::Engine,
-    linker : Arc<wt::Linker<state::InstanceState>>
+    linker : Arc<wt::Linker<runner::InstanceState>>
 }
 impl WasmGlobals {
 

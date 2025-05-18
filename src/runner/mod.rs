@@ -1,6 +1,18 @@
 use crate::WasmGlobals;
-use crate::state::InstanceState;
 use flywheelmc_common::prelude::*;
+
+
+pub mod player;
+
+pub mod event;
+
+
+pub(crate) struct InstanceState {
+    pub(crate) runner         : Entity,
+    pub(crate) memory         : Option<wt::Memory>,
+    pub(crate) fn_alloc       : Option<wt::TypedFunc<(u32, u32,), u32>>,
+    pub(crate) event_receiver : mpsc::UnboundedReceiver<(&'static str, Vec<u8>,)>
+}
 
 
 impl WasmGlobals {
@@ -67,8 +79,11 @@ pub struct WasmStartedEvent {
 
 #[derive(Component)]
 pub struct WasmRunnerInstance {
-    id           : StartWasmId,
-    main_fn_task : Task<()>
+                id           : StartWasmId,
+                #[allow(dead_code)]
+                main_fn_task : Task<()>,
+    pub(crate)  players      : BiBTreeMap<u64, Entity>,
+                event_sender : mpsc::UnboundedSender<(&'static str, Vec<u8>,)>
 }
 
 
@@ -85,13 +100,15 @@ pub fn compile_wasms(
             let linker = Arc::clone(&r_globals.linker);
             cmds.spawn_task(async move || {
                 let result = async move {
-
-                    let     module   = module?;
+                    let module = module?;
+                    let (event_sender, event_receiver,) = mpsc::unbounded_channel();
                     // TODO: Validate module imports and exports.
+                    let mut entity   = AsyncWorld.spawn_bundle(());
                     let mut store    = wt::Store::new(&engine, InstanceState {
-                        memory      : None,
-                        fn_alloc    : None,
-                        event_queue : VecDeque::new()
+                        runner         : entity.id(),
+                        memory         : None,
+                        fn_alloc       : None,
+                        event_receiver
                     });
                     store.set_fuel(u64::MAX).unwrap();
                     store.fuel_async_yield_interval(Some(1024)).unwrap();
@@ -99,16 +116,21 @@ pub fn compile_wasms(
                     store.data_mut().memory   = Some(instance.get_memory(&mut store, "memory").unwrap()); // TODO: Get rid of this unwrap.
                     store.data_mut().fn_alloc = Some(instance.get_typed_func(&mut store, "flywheel_alloc").unwrap()); // TODO: Get rid of this unwrap.
                     let     main_fn  = instance.get_typed_func::<(), ()>(&mut store, "flywheel_main")?;
-                    Ok(AsyncWorld.spawn_task(async move {
+                    Ok((entity, event_sender, AsyncWorld.spawn_task(async move {
                         let _ = task::poll_and_yield(main_fn.call_async(&mut store, ())).await;
-                    }))
+                    })))
 
                 }.await;
                 match (result) {
-                    Ok(main_fn_task) => {
+                    Ok((entity, event_sender, main_fn_task,)) => {
                         info!("Started WASM runner {}...", id.0);
-                        let runner = AsyncWorld.spawn_bundle(WasmRunnerInstance { id, main_fn_task });
-                        let _      = AsyncWorld.send_event(WasmStartedEvent { id, entity : runner.id() });
+                        let _ = entity.insert(WasmRunnerInstance {
+                            id,
+                            main_fn_task,
+                            players      : BiBTreeMap::new(),
+                            event_sender
+                        });
+                        let _ = AsyncWorld.send_event(WasmStartedEvent { id, entity : entity.id() });
                     }
                     Err(err) => {
                         debug!("Failed to start WASM runner {}: {err:?}", id.0);
