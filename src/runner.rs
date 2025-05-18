@@ -89,7 +89,8 @@ pub fn compile_wasms(
                     let     module   = module?;
                     // TODO: Validate module imports and exports.
                     let mut store    = wt::Store::new(&engine, InstanceState {
-                        memory : None
+                        memory      : None,
+                        event_queue : VecDeque::new()
                     });
                     store.set_fuel(u64::MAX).unwrap();
                     store.fuel_async_yield_interval(Some(1024)).unwrap();

@@ -1,5 +1,5 @@
 use crate::sig::{ ImportFuncs, WasmCallCtx };
-use crate::types::{ WasmResult, WasmPtr, WasmAnyPtr, TransactionId };
+use crate::types::{ WasmResult, WasmPtr, WasmAnyPtr };
 use flywheelmc_common::prelude::*;
 
 
@@ -23,19 +23,33 @@ macro define( $import_funcs:expr, $func:ident $(,)? ) {
 }
 
 
-async fn flywheel_refuel(mut ctx : WasmCallCtx<'_>) -> WasmResult<()> {
+async fn flywheel_refuel(
+    mut ctx : WasmCallCtx<'_>
+) -> WasmResult<()> {
     ctx.refuel();
+    task::yield_now().await;
     Ok(())
 }
 
 
 async fn flywheel_next_event(
-    _ctx          : WasmCallCtx<'_>,
-    _out_id_ptr   : WasmPtr<WasmAnyPtr>,
-    _out_id_len   : WasmPtr<u32>,
-    _out_args_ptr : WasmPtr<WasmAnyPtr>,
-    _out_args_len : WasmPtr<u32>
+    mut ctx          : WasmCallCtx<'_>,
+        out_id_ptr   : WasmPtr<WasmAnyPtr>,
+        out_id_len   : WasmPtr<u32>,
+        out_args_ptr : WasmPtr<WasmAnyPtr>,
+        out_args_len : WasmPtr<u32>
 ) -> WasmResult<u32> {
-    // TODO: Next event
-    Ok(0)
+    if let Some((id, args,)) = ctx.next_event() {
+        let id_len = id.len();
+        let id_ptr = ctx.mem_alloc_any(id_len, 1)?;
+        ctx.mem_write_any(id_ptr, id.as_bytes())?;
+        ctx.mem_write(out_id_ptr, id_ptr)?;
+        ctx.mem_write(out_id_len, id_len as u32)?;
+        let args_len = args.len();
+        let args_ptr = ctx.mem_alloc_any(args_len, 1)?;
+        ctx.mem_write_any(args_ptr, &args)?;
+        ctx.mem_write(out_args_ptr, args_ptr)?;
+        ctx.mem_write(out_args_len, args_len as u32)?;
+        Ok(1)
+    } else { Ok(0) }
 }

@@ -117,6 +117,10 @@ impl<'l> WasmCallCtx<'l> {
         &mut self.caller
     }
 
+    pub fn next_event(&mut self) -> Option<(String, Vec<u8>,)> {
+        self.caller.data_mut().event_queue.pop_front()
+    }
+
     pub fn refuel(&mut self) {
         let _ = self.caller.set_fuel(u64::MAX);
     }
@@ -136,6 +140,14 @@ impl<'l> WasmCallCtx<'l> {
 
     pub fn mem_write<T : WasmPtrable>(&mut self, ptr : WasmPtr<T>, value : T) -> Result<(), MemoryOutOfBounds> {
         self.caller.data().memory.ok_or(MemoryOutOfBounds).and_then(|memory| value.mem_write(self, &memory, ptr))
+    }
+    pub fn mem_write_any(&mut self, ptr : WasmAnyPtr, value : &[u8]) -> Result<(), MemoryOutOfBounds> {
+        self.caller.data().memory.ok_or(MemoryOutOfBounds)?.write(&mut self.caller, ptr.offset(), value)?;
+        Ok(())
+    }
+
+    pub fn mem_alloc_any(&mut self, len : usize, align : usize) -> Result<WasmAnyPtr, MemoryAllocError> {
+        todo!()
     }
 
 }
@@ -173,5 +185,14 @@ impl From<MemoryDecodeError> for Cow<'_, str> {
             MemoryDecodeError::OutOfBounds => MemoryOutOfBounds.into(),
             MemoryDecodeError::InvalidData => Cow::Borrowed("invalid utf8")
         }
+    }
+}
+
+pub enum MemoryAllocError {
+
+}
+impl From<MemoryAllocError> for Cow<'_, str> {
+    fn from(_ : MemoryAllocError) -> Self {
+        todo!()
     }
 }
