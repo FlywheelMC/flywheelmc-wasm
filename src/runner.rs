@@ -90,12 +90,14 @@ pub fn compile_wasms(
                     // TODO: Validate module imports and exports.
                     let mut store    = wt::Store::new(&engine, InstanceState {
                         memory      : None,
+                        fn_alloc    : None,
                         event_queue : VecDeque::new()
                     });
                     store.set_fuel(u64::MAX).unwrap();
                     store.fuel_async_yield_interval(Some(1024)).unwrap();
                     let     instance = linker.instantiate_async(&mut store, &module).await?;
-                    store.data_mut().memory = Some(instance.get_memory(&mut store, "memory").unwrap()); // TODO: Get rid of this unwrap.
+                    store.data_mut().memory   = Some(instance.get_memory(&mut store, "memory").unwrap()); // TODO: Get rid of this unwrap.
+                    store.data_mut().fn_alloc = Some(instance.get_typed_func(&mut store, "flywheel_alloc").unwrap()); // TODO: Get rid of this unwrap.
                     let     main_fn  = instance.get_typed_func::<(), ()>(&mut store, "flywheel_main")?;
                     Ok(AsyncWorld.spawn_task(async move {
                         let _ = task::poll_and_yield(main_fn.call_async(&mut store, ())).await;

@@ -147,7 +147,8 @@ impl<'l> WasmCallCtx<'l> {
     }
 
     pub fn mem_alloc_any(&mut self, len : usize, align : usize) -> Result<WasmAnyPtr, MemoryAllocError> {
-        todo!()
+        let ptr = self.caller.data().fn_alloc.clone().ok_or(MemoryAllocError::NoAllocFn)?.call(&mut self.caller, (len as u32, align as u32,))?;
+        Ok(unsafe { WasmAnyPtr::from_ptr(ptr) })
     }
 
 }
@@ -189,10 +190,19 @@ impl From<MemoryDecodeError> for Cow<'_, str> {
 }
 
 pub enum MemoryAllocError {
-
+    NoAllocFn,
+    Wasmtime(wt::Error)
 }
 impl From<MemoryAllocError> for Cow<'_, str> {
-    fn from(_ : MemoryAllocError) -> Self {
-        todo!()
+    fn from(value : MemoryAllocError) -> Self {
+        match (value) {
+            MemoryAllocError::NoAllocFn     => Cow::Borrowed("no alloc function"),
+            MemoryAllocError::Wasmtime(err) => Cow::Owned(err.to_string())
+        }
+    }
+}
+impl From<wt::Error> for MemoryAllocError {
+    fn from(value : wt::Error) -> Self {
+        Self::Wasmtime(value)
     }
 }
