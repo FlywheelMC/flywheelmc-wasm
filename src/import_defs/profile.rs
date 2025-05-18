@@ -27,8 +27,7 @@ async fn flywheel_profile_from_session(
 
     ctx.mem_write(out_uuid, uuid.as_u128())?;
     let name_len = name.len();
-    let name_ptr = ctx.mem_alloc_any(name_len, 1).await?;
-    ctx.mem_write_any(name_ptr, name.as_bytes())?;
+    let name_ptr = ctx.mem_alloc_write_str(&name).await?;
     ctx.mem_write(out_name_ptr, name_ptr)?;
     ctx.mem_write(out_name_len, name_len as u32)?;
     Ok(1)

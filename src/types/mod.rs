@@ -101,11 +101,15 @@ impl WasmReturnTy for TransactionId {
 /// ### Safety
 /// If implemented incorrectly, this could go horribly wrong.
 pub unsafe trait WasmPtrable : Sized + 'static {
+    const LEN   : usize;
+    const ALIGN : usize;
     fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError>;
     fn mem_write(&self, ctx : &mut WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<(), MemoryOutOfBounds>;
 }
 macro impl_wasm_ptrable_for_num( $ty:ty ) {
     unsafe impl WasmPtrable for $ty {
+        const LEN   : usize = mem::size_of::<$ty>();
+        const ALIGN : usize = mem::align_of::<$ty>();
         fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError> {
             let mut buf = [0u8; mem::size_of::<Self>()];
             memory.read(ctx.store(), ptr.offset(), &mut buf)?;
@@ -130,6 +134,8 @@ impl_wasm_ptrable_for_num!(i128);
 impl_wasm_ptrable_for_num!(f32);
 impl_wasm_ptrable_for_num!(f64);
 unsafe impl<T : WasmPtrable> WasmPtrable for WasmPtr<T> {
+    const LEN   : usize = mem::size_of::<u32>();
+    const ALIGN : usize = mem::align_of::<u32>();
     fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError> {
         <u32 as WasmPtrable>::mem_read(ctx, memory, unsafe { ptr.cast() }).map(|ptr| unsafe { Self::from_ptr(ptr) })
     }
@@ -138,6 +144,8 @@ unsafe impl<T : WasmPtrable> WasmPtrable for WasmPtr<T> {
     }
 }
 unsafe impl WasmPtrable for WasmAnyPtr {
+    const LEN   : usize = mem::size_of::<u32>();
+    const ALIGN : usize = mem::align_of::<u32>();
     fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError> {
         <u32 as WasmPtrable>::mem_read(ctx, memory, unsafe { ptr.cast() }).map(|ptr| unsafe { Self::from_ptr(ptr) })
     }
@@ -147,11 +155,14 @@ unsafe impl WasmPtrable for WasmAnyPtr {
 }
 
 
-#[derive(Clone, Copy)]
 pub struct WasmPtr<T : WasmPtrable> {
     pub(crate)  ptr     : u32,
                 _marker : PhantomData<*mut T>
 }
+impl<T : WasmPtrable> Clone for WasmPtr<T> {
+    fn clone(&self) -> Self { unsafe { Self::from_ptr(self.ptr) } }
+}
+impl<T : WasmPtrable> Copy for WasmPtr<T> { }
 impl<T : WasmPtrable> WasmPtr<T> {
 
     #[inline]
