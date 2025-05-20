@@ -2,17 +2,14 @@ use crate::WasmGlobals;
 use flywheelmc_common::prelude::*;
 
 
+mod state;
+pub(crate) use state::InstanceState;
+mod callctx;
+pub use callctx::*;
+
 pub mod player;
 
 pub mod event;
-
-
-pub(crate) struct InstanceState {
-    pub(crate) runner         : Entity,
-    pub(crate) memory         : Option<wt::Memory>,
-    pub(crate) fn_alloc       : Option<wt::TypedFunc<(u32, u32,), u32>>,
-    pub(crate) event_receiver : channel::Receiver<(&'static str, Vec<u8>,)>
-}
 
 
 impl WasmGlobals {
@@ -80,7 +77,7 @@ pub struct WasmStartedEvent {
 #[derive(Component)]
 pub struct WasmRunnerInstance {
                 id           : StartWasmId,
-                #[allow(dead_code)]
+                #[expect(dead_code)]
                 main_fn_task : Task<()>,
     pub(crate)  players      : BiBTreeMap<u64, Entity>,
                 event_sender : channel::Sender<(&'static str, Vec<u8>,)>
@@ -103,7 +100,7 @@ pub fn compile_wasms(
                     let module = module?;
                     let (event_sender, event_receiver,) = channel::unbounded();
                     // TODO: Validate module imports and exports.
-                    let mut entity   = AsyncWorld.spawn_bundle(());
+                    let     entity   = AsyncWorld.spawn_bundle(());
                     let mut store    = wt::Store::new(&engine, InstanceState {
                         runner         : entity.id(),
                         memory         : None,

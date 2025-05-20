@@ -1,5 +1,6 @@
-use crate::sig::{ ImportFuncs, WasmCallCtx };
+use crate::sig::ImportFuncs;
 use crate::types::{ WasmResult, WasmPtr, WasmAnyPtr };
+use crate::runner::WasmCallCtx;
 use flywheelmc_common::prelude::*;
 
 

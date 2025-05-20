@@ -1,4 +1,4 @@
-use crate::sig::{ MemoryOutOfBounds, MemoryDecodeError, WasmCallCtx };
+use crate::runner::{ MemoryOutOfBounds, MemoryDecodeError, WasmCallCtx };
 use flywheelmc_common::prelude::*;
 use core::marker::Tuple;
 
@@ -46,7 +46,7 @@ impl WasmParamTy for f64 {
 }
 impl<T : WasmPtrable> WasmParamTy for WasmPtr<T> {
     type Wasm = u32;
-    fn from_wasm(ptr : Self::Wasm) -> Self { unsafe { Self::from_ptr(ptr) } }
+    fn from_wasm(ptr : Self::Wasm) -> Self { Self::from_ptr(ptr) }
 }
 impl WasmParamTy for WasmAnyPtr {
     type Wasm = u32;
@@ -137,20 +137,20 @@ unsafe impl<T : WasmPtrable> WasmPtrable for WasmPtr<T> {
     const LEN   : usize = mem::size_of::<u32>();
     const ALIGN : usize = mem::align_of::<u32>();
     fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError> {
-        <u32 as WasmPtrable>::mem_read(ctx, memory, unsafe { ptr.cast() }).map(|ptr| unsafe { Self::from_ptr(ptr) })
+        <u32 as WasmPtrable>::mem_read(ctx, memory, ptr.cast()).map(Self::from_ptr)
     }
     fn mem_write(&self, ctx : &mut WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<(), MemoryOutOfBounds> {
-        <u32 as WasmPtrable>::mem_write(&self.ptr(), ctx, memory, unsafe { ptr.cast() })
+        <u32 as WasmPtrable>::mem_write(&self.ptr(), ctx, memory, ptr.cast())
     }
 }
 unsafe impl WasmPtrable for WasmAnyPtr {
     const LEN   : usize = mem::size_of::<u32>();
     const ALIGN : usize = mem::align_of::<u32>();
     fn mem_read(ctx : &WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<Self, MemoryDecodeError> {
-        <u32 as WasmPtrable>::mem_read(ctx, memory, unsafe { ptr.cast() }).map(|ptr| unsafe { Self::from_ptr(ptr) })
+        <u32 as WasmPtrable>::mem_read(ctx, memory, ptr.cast()).map(Self::from_ptr)
     }
     fn mem_write(&self, ctx : &mut WasmCallCtx<'_>, memory : &wt::Memory, ptr : WasmPtr<Self>) -> Result<(), MemoryOutOfBounds> {
-        <u32 as WasmPtrable>::mem_write(&self.ptr(), ctx, memory, unsafe { ptr.cast() })
+        <u32 as WasmPtrable>::mem_write(&self.ptr(), ctx, memory, ptr.cast())
     }
 }
 
@@ -160,13 +160,13 @@ pub struct WasmPtr<T : WasmPtrable> {
                 _marker : PhantomData<*mut T>
 }
 impl<T : WasmPtrable> Clone for WasmPtr<T> {
-    fn clone(&self) -> Self { unsafe { Self::from_ptr(self.ptr) } }
+    fn clone(&self) -> Self { *self }
 }
 impl<T : WasmPtrable> Copy for WasmPtr<T> { }
 impl<T : WasmPtrable> WasmPtr<T> {
 
     #[inline]
-    pub unsafe fn from_ptr(ptr : u32) -> Self { Self { ptr, _marker : PhantomData } }
+    pub fn from_ptr(ptr : u32) -> Self { Self { ptr, _marker : PhantomData } }
 
     #[inline]
     pub fn ptr(&self) -> u32 { self.ptr }
@@ -175,12 +175,12 @@ impl<T : WasmPtrable> WasmPtr<T> {
     pub fn offset(&self) -> usize { self.ptr as usize }
 
     #[inline(always)]
-    pub unsafe fn cast<U : WasmPtrable>(self) -> WasmPtr<U> {
+    pub fn cast<U : WasmPtrable>(self) -> WasmPtr<U> {
         unsafe { mem::transmute(self) }
     }
 
     #[inline]
-    pub fn type_erase(self) -> WasmAnyPtr { unsafe { WasmAnyPtr::from_ptr(self.ptr) } }
+    pub fn type_erase(self) -> WasmAnyPtr { WasmAnyPtr::from_ptr(self.ptr) }
 
 }
 unsafe impl<T : WasmPtrable> Send for WasmPtr<T> { }
@@ -195,7 +195,7 @@ pub struct WasmAnyPtr {
 impl WasmAnyPtr {
 
     #[inline]
-    pub unsafe fn from_ptr(ptr : u32) -> Self { Self { ptr } }
+    pub fn from_ptr(ptr : u32) -> Self { Self { ptr } }
 
     #[inline]
     pub fn ptr(&self) -> u32 { self.ptr }
@@ -204,27 +204,27 @@ impl WasmAnyPtr {
     pub fn offset(&self) -> usize { self.ptr as usize }
 
     #[inline]
-    pub unsafe fn assume_type<U : WasmPtrable>(self) -> WasmPtr<U> {
-        unsafe { WasmPtr::<U>::from_ptr(self.ptr) }
+    pub fn assume_type<U : WasmPtrable>(self) -> WasmPtr<U> {
+        WasmPtr::<U>::from_ptr(self.ptr)
     }
 
     #[inline]
-    pub unsafe fn shift(self, offset : u32) -> Self { unsafe {
+    pub fn shift(self, offset : u32) -> Self {
         Self::from_ptr(self.ptr.checked_add(offset).unwrap())
-    } }
+    }
     #[inline]
-    pub unsafe fn shift_mut(&mut self, offset : u32) -> &mut Self {
-        *self = unsafe { self.shift(offset) };
+    pub fn shift_mut(&mut self, offset : u32) -> &mut Self {
+        *self = self.shift(offset);
         self
     }
 
     #[inline]
-    pub unsafe fn shift_signed(self, offset : i32) -> Self { unsafe {
+    pub fn shift_signed(self, offset : i32) -> Self {
         Self::from_ptr(self.ptr.checked_add_signed(offset).unwrap())
-    } }
+    }
     #[inline]
-    pub unsafe fn shift_signed_mut(&mut self, offset : i32) -> &mut Self {
-        *self = unsafe { self.shift_signed(offset) };
+    pub fn shift_signed_mut(&mut self, offset : i32) -> &mut Self {
+        *self = self.shift_signed(offset);
         self
     }
 

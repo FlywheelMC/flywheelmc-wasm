@@ -11,15 +11,13 @@
 use flywheelmc_common::prelude::*;
 
 
-mod sig;
-pub use sig::{ ImportFuncs, WasmCallCtx };
+pub mod sig;
 
-mod types;
-pub use types::{ WasmPtr, WasmAnyPtr, WasmResult };
-
-mod import_defs;
+pub mod types;
 
 pub mod runner;
+
+mod import_defs;
 
 
 pub const PROTOCOL_VERSION : u64 = 0;
@@ -45,7 +43,7 @@ impl Default for FlywheelMcWasmPlugin {
             let mut export_funcs = sig::ExportFuncs::new();
             export_funcs.define::<(), u64>("flywheel_protocol", true);
             export_funcs.define::<(), ()>("flywheel_init", true);
-            export_funcs.define::<(u32, u32,), WasmAnyPtr>("flywheel_alloc", true);
+            export_funcs.define::<(u32, u32,), types::WasmAnyPtr>("flywheel_alloc", true);
             export_funcs
         }
 

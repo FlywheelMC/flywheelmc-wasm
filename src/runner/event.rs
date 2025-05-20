@@ -1,7 +1,6 @@
 use crate::runner::WasmRunnerInstance;
 use crate::runner::player::PlayerWasmBinding;
 use flywheelmc_common::prelude::*;
-use flywheelmc_players::player::Player;
 use flywheelmc_players::world::WorldChunkLoading;
 
 
@@ -73,13 +72,13 @@ pub(crate) fn trigger_events(
 
 
 pub(crate) fn load_world_chunks(
-        q_players  : Query<(&Player, &PlayerWasmBinding)>,
+        q_players  : Query<(&PlayerWasmBinding,)>,
         q_runners  : Query<(&WasmRunnerInstance,)>,
     mut er_load    : EventReader<WorldChunkLoading>,
     mut ew_trigger : EventWriter<WasmTriggerEvent>
 ) {
     for WorldChunkLoading { entity : player_entity, pos, .. } in er_load.read() {
-        if let Ok((player, PlayerWasmBinding { runner : runner_entity },)) = q_players.get(*player_entity)
+        if let Ok((PlayerWasmBinding { runner : runner_entity },)) = q_players.get(*player_entity)
             && let Ok((runner,)) = q_runners.get(*runner_entity)
             && let Some(session_id) = runner.players.get_by_right(player_entity)
         {

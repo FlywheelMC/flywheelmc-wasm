@@ -1,5 +1,5 @@
-use super::*;
+use crate::sig::ImportFuncs;
 
 
-pub fn define_all(import_funcs : &mut ImportFuncs) {
+pub fn define_all(_import_funcs : &mut ImportFuncs) {
 }
