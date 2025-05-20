@@ -17,33 +17,33 @@ pub fn define_all(import_funcs : &mut ImportFuncs) {
 }
 
 
-async fn flywheel_player_get_pos(_ctx : WasmCallCtx<'_>, _session_id : u64, _out_x : WasmPtr<f64>, _out_y : WasmPtr<f64>, _out_z : WasmPtr<f64>) -> WasmResult<()> {
-    todo!()
-}
+// async fn flywheel_player_get_pos(_ctx : WasmCallCtx<'_>, _session_id : u64, _out_x : WasmPtr<f64>, _out_y : WasmPtr<f64>, _out_z : WasmPtr<f64>) -> WasmResult<()> {
+//     todo!()
+// }
 
-async fn flywheel_player_set_pos(_ctx : WasmCallCtx<'_>, _session_id : u64, _x : f64, _y : f64, _z : f64) -> WasmResult<()> {
-    todo!()
-}
-
-
-/// Radians
-async fn flywheel_player_get_rot(_ctx : WasmCallCtx<'_>, _session_id : u64, _out_yaw : WasmPtr<f64>, _out_pitch : WasmPtr<f64>) -> WasmResult<()> {
-    todo!()
-}
-
-/// Radians
-async fn flywheel_player_set_rot(_ctx : WasmCallCtx<'_>, _session_id : u64, _yaw : f64, _pitch : f64) -> WasmResult<()> {
-    todo!()
-}
+// async fn flywheel_player_set_pos(_ctx : WasmCallCtx<'_>, _session_id : u64, _x : f64, _y : f64, _z : f64) -> WasmResult<()> {
+//     todo!()
+// }
 
 
-async fn flywheel_player_get_vel(_ctx : WasmCallCtx<'_>, _session_id : u64, _out_x : WasmPtr<f64>, _out_y : WasmPtr<f64>, _out_z : WasmPtr<f64>) -> WasmResult<()> {
-    todo!()
-}
+// /// Radians
+// async fn flywheel_player_get_rot(_ctx : WasmCallCtx<'_>, _session_id : u64, _out_yaw : WasmPtr<f64>, _out_pitch : WasmPtr<f64>) -> WasmResult<()> {
+//     todo!()
+// }
 
-async fn flywheel_player_set_vel(_ctx : WasmCallCtx<'_>, _session_id : u64, _x : f64, _y : f64, _z : f64) -> WasmResult<()> {
-    todo!()
-}
+// /// Radians
+// async fn flywheel_player_set_rot(_ctx : WasmCallCtx<'_>, _session_id : u64, _yaw : f64, _pitch : f64) -> WasmResult<()> {
+//     todo!()
+// }
+
+
+// async fn flywheel_player_get_vel(_ctx : WasmCallCtx<'_>, _session_id : u64, _out_x : WasmPtr<f64>, _out_y : WasmPtr<f64>, _out_z : WasmPtr<f64>) -> WasmResult<()> {
+//     todo!()
+// }
+
+// async fn flywheel_player_set_vel(_ctx : WasmCallCtx<'_>, _session_id : u64, _x : f64, _y : f64, _z : f64) -> WasmResult<()> {
+//     todo!()
+// }
 
 
 /// XML text

@@ -69,7 +69,8 @@ impl Plugin for FlywheelMcWasmPlugin {
             })
             .add_systems(Update, runner::compile_wasms)
             .add_systems(Update, runner::player::bind_players)
-            .add_systems(Update, runner::event::trigger_events);
+            .add_systems(Update, runner::event::trigger_events)
+            .add_systems(Update, runner::event::load_world_chunks);
     }
 }
 

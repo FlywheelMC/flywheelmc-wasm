@@ -7,6 +7,7 @@ mod system;
 mod rand;
 mod player;
 mod profile;
+mod world;
 
 
 pub fn define_all(import_funcs : &mut ImportFuncs) {
@@ -16,6 +17,7 @@ pub fn define_all(import_funcs : &mut ImportFuncs) {
     rand::define_all(import_funcs);
     player::define_all(import_funcs);
     profile::define_all(import_funcs);
+    world::define_all(import_funcs);
 }
 
 macro define( $import_funcs:expr, $func:ident $(,)? ) {

@@ -11,7 +11,7 @@ pub(crate) struct InstanceState {
     pub(crate) runner         : Entity,
     pub(crate) memory         : Option<wt::Memory>,
     pub(crate) fn_alloc       : Option<wt::TypedFunc<(u32, u32,), u32>>,
-    pub(crate) event_receiver : mpsc::UnboundedReceiver<(&'static str, Vec<u8>,)>
+    pub(crate) event_receiver : channel::Receiver<(&'static str, Vec<u8>,)>
 }
 
 
@@ -83,7 +83,7 @@ pub struct WasmRunnerInstance {
                 #[allow(dead_code)]
                 main_fn_task : Task<()>,
     pub(crate)  players      : BiBTreeMap<u64, Entity>,
-                event_sender : mpsc::UnboundedSender<(&'static str, Vec<u8>,)>
+                event_sender : channel::Sender<(&'static str, Vec<u8>,)>
 }
 
 
@@ -101,7 +101,7 @@ pub fn compile_wasms(
             cmds.spawn_task(async move || {
                 let result = async move {
                     let module = module?;
-                    let (event_sender, event_receiver,) = mpsc::unbounded_channel();
+                    let (event_sender, event_receiver,) = channel::unbounded();
                     // TODO: Validate module imports and exports.
                     let mut entity   = AsyncWorld.spawn_bundle(());
                     let mut store    = wt::Store::new(&engine, InstanceState {
@@ -111,7 +111,7 @@ pub fn compile_wasms(
                         event_receiver
                     });
                     store.set_fuel(u64::MAX).unwrap();
-                    store.fuel_async_yield_interval(Some(1024)).unwrap();
+                    store.fuel_async_yield_interval(Some(4096)).unwrap();
                     let     instance = linker.instantiate_async(&mut store, &module).await?;
                     store.data_mut().memory   = Some(instance.get_memory(&mut store, "memory").unwrap()); // TODO: Get rid of this unwrap.
                     store.data_mut().fn_alloc = Some(instance.get_typed_func(&mut store, "flywheel_alloc").unwrap()); // TODO: Get rid of this unwrap.

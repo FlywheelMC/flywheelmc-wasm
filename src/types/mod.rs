@@ -208,6 +208,26 @@ impl WasmAnyPtr {
         unsafe { WasmPtr::<U>::from_ptr(self.ptr) }
     }
 
+    #[inline]
+    pub unsafe fn shift(self, offset : u32) -> Self { unsafe {
+        Self::from_ptr(self.ptr.checked_add(offset).unwrap())
+    } }
+    #[inline]
+    pub unsafe fn shift_mut(&mut self, offset : u32) -> &mut Self {
+        *self = unsafe { self.shift(offset) };
+        self
+    }
+
+    #[inline]
+    pub unsafe fn shift_signed(self, offset : i32) -> Self { unsafe {
+        Self::from_ptr(self.ptr.checked_add_signed(offset).unwrap())
+    } }
+    #[inline]
+    pub unsafe fn shift_signed_mut(&mut self, offset : i32) -> &mut Self {
+        *self = unsafe { self.shift_signed(offset) };
+        self
+    }
+
 }
 
 
