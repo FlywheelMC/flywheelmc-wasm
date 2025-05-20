@@ -38,7 +38,7 @@ async fn flywheel_world_set_blocks(
             ptr.shift_mut(block_id_len);
 
             let states_count = ctx.mem_read(ptr.assume_type::<u8>())?;
-            ptr.shift_mut(4);
+            ptr.shift_mut(1);
 
             let mut states = Vec::with_capacity(states_count as usize);
             for _ in 0..states_count {
