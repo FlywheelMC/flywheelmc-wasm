@@ -7,7 +7,24 @@ use flywheelmc_players::world::{ WorldChunkActionEvent, WorldChunkAction };
 
 
 pub fn define_all(import_funcs : &mut ImportFuncs) {
+    define!(import_funcs, flywheel_world_mark_ready,);
     define!(import_funcs, flywheel_world_set_blocks,);
+}
+
+
+async fn flywheel_world_mark_ready(
+    ctx        : WasmCallCtx<'_>,
+    session_id : u64,
+    chunk_x    : i32,
+    chunk_z    : i32
+) -> WasmResult<()> {
+    if let Some(entity) = ctx.player_session_to_entity(session_id).await {
+        let _ = AsyncWorld.send_event(WorldChunkActionEvent {
+            entity,
+            action : WorldChunkAction::MarkReady { chunk_pos : Vec2::new(chunk_x, chunk_z) }
+        });
+    }
+    Ok(())
 }
 
 

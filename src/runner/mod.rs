@@ -109,7 +109,7 @@ pub fn compile_wasms(
                     });
                     store.set_fuel(u64::MAX).unwrap();
                     store.fuel_async_yield_interval(Some(16777216)).unwrap();
-                    let     instance = linker.instantiate_async(&mut store, &module).await?;
+                    let     instance = task::poll_and_yield(linker.instantiate_async(&mut store, &module)).await?;
                     store.data_mut().memory   = Some(instance.get_memory(&mut store, "memory").unwrap()); // TODO: Get rid of this unwrap.
                     store.data_mut().fn_alloc = Some(instance.get_typed_func(&mut store, "flywheel_alloc").unwrap()); // TODO: Get rid of this unwrap.
                     let     main_fn  = instance.get_typed_func::<(), ()>(&mut store, "flywheel_main")?;

@@ -32,8 +32,16 @@ impl WasmParamTy for u32 {
     type Wasm = u32;
     fn from_wasm(wasm : Self::Wasm) -> Self { wasm }
 }
+impl WasmParamTy for i32 {
+    type Wasm = i32;
+    fn from_wasm(wasm : Self::Wasm) -> Self { wasm }
+}
 impl WasmParamTy for u64 {
     type Wasm = u64;
+    fn from_wasm(wasm : Self::Wasm) -> Self { wasm }
+}
+impl WasmParamTy for i64 {
+    type Wasm = i64;
     fn from_wasm(wasm : Self::Wasm) -> Self { wasm }
 }
 impl WasmParamTy for f32 {
@@ -72,8 +80,16 @@ impl WasmReturnTy for u32 {
     type Wasm = u32;
     fn to_wasm(self) -> Self::Wasm { self }
 }
+impl WasmReturnTy for i32 {
+    type Wasm = i32;
+    fn to_wasm(self) -> Self::Wasm { self }
+}
 impl WasmReturnTy for u64 {
     type Wasm = u64;
+    fn to_wasm(self) -> Self::Wasm { self }
+}
+impl WasmReturnTy for i64 {
+    type Wasm = i64;
     fn to_wasm(self) -> Self::Wasm { self }
 }
 impl WasmReturnTy for f32 {
